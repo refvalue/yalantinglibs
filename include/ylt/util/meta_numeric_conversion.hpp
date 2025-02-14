@@ -31,7 +31,7 @@
 
 namespace ylt::detail {
 template <typename T>
-  requires std::is_standard_layout_v<T>
+requires std::is_standard_layout_v<T>
 inline constexpr std::size_t hexadecimal_character_size_v = sizeof(T) * 2;
 
 inline constexpr std::string_view hexadecimal_characters{"0123456789ABCDEF"};
@@ -52,7 +52,7 @@ namespace ylt {
  * @return The hexadecimal meta_string
  */
 template <typename Number>
-  requires std::is_arithmetic_v<Number>
+requires std::is_arithmetic_v<Number>
 constexpr auto to_hexadecimal_meta_string(Number number,
                                           bool big_endian = true) noexcept {
   return split_number(
@@ -75,7 +75,8 @@ constexpr auto to_hexadecimal_meta_string(
     std::span<const std::uint8_t, N> data) noexcept {
   return [&]<std::size_t... Is>(std::index_sequence<Is...>) {
     return refvalue::meta_string{detail::to_hexadecimal_character(data[Is])...};
-  }(std::make_index_sequence<N>{});
+  }
+  (std::make_index_sequence<N>{});
 }
 
 /**

@@ -265,21 +265,22 @@ inline constexpr auto step_mapping_rho_rotation_bits = [] {
  */
 inline constexpr auto step_mapping_tau_rc_table =
     []<std::size_t... Is>(std::index_sequence<Is...>) {
-      constexpr auto func_rc = [](std::size_t round) {
-        // Let RC = 0w.
-        // For j from 0 to l = log2(w), let RC[2 ^ j – 1] = rc(j + 7ir).
-        word_type result = 0;
+  constexpr auto func_rc = [](std::size_t round) {
+    // Let RC = 0w.
+    // For j from 0 to l = log2(w), let RC[2 ^ j – 1] = rc(j + 7ir).
+    word_type result = 0;
 
-        for (std::size_t i = 0; i <= log2_word_bits; i++) {
-          set_number_bit(result, (1 << i) - 1,
-                         step_mapping_helper_rc(i + 7 * round));
-        }
+    for (std::size_t i = 0; i <= log2_word_bits; i++) {
+      set_number_bit(result, (1 << i) - 1,
+                     step_mapping_helper_rc(i + 7 * round));
+    }
 
-        return result;
-      };
+    return result;
+  };
 
-      return std::array<word_type, sizeof...(Is)>{func_rc(Is)...};
-    }(std::make_index_sequence<round_size>{});
+  return std::array<word_type, sizeof...(Is)>{func_rc(Is)...};
+}
+(std::make_index_sequence<round_size>{});
 
 /**
  * A step mapping function named theta(A) defined in Section 3.2.1.
@@ -294,7 +295,8 @@ constexpr void step_mapping_theta(hash_context<Type>& context) noexcept {
   for (std::size_t x = 0; x < common_factor; x++) {
     context.tmp[x] = [&]<std::size_t... Is>(std::index_sequence<Is...>) {
       return (context.state(x, Is) ^ ...);
-    }(std::make_index_sequence<common_factor>{});
+    }
+    (std::make_index_sequence<common_factor>{});
   }
 
   // For all pairs (x, z) such that 0 ≤ x < 5 and 0 ≤ z < w, let D[x, z] = C[(x
@@ -330,7 +332,8 @@ constexpr void step_mapping_rho(hash_context<Type>& context) noexcept {
     ((context.intermediate[Is] =
           rotl(context.state[Is], step_mapping_rho_rotation_bits[Is])),
      ...);
-  }(std::make_index_sequence<step_mapping_rho_rotation_bits.size()>{});
+  }
+  (std::make_index_sequence<step_mapping_rho_rotation_bits.size()>{});
 }
 
 /**
@@ -454,7 +457,8 @@ constexpr void sponge_step_6(hash_context<Type>& context) noexcept {
       // little-endian.
       context.state[i] ^= make_number<word_type>(
           {context.block[i * sizeof(word_type) + Is]...}, false);
-    }(std::make_index_sequence<sizeof(word_type)>{});
+    }
+    (std::make_index_sequence<sizeof(word_type)>{});
   }
 
   // f = KECCAK-p[b, nr]
