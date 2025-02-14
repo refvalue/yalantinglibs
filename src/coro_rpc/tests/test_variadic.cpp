@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022, Alibaba Group Holding Limited;
+ * Copyright (c) 2023, Alibaba Group Holding Limited;
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include <coro_rpc/coro_rpc_client.hpp>
-#include <coro_rpc/coro_rpc_server.hpp>
-#include <coro_rpc/rpc_connection.hpp>
+#include <ylt/coro_rpc/coro_rpc_client.hpp>
+#include <ylt/coro_rpc/coro_rpc_server.hpp>
 
 #include "doctest.h"
 using namespace coro_rpc;
@@ -30,17 +29,10 @@ TEST_CASE("test varadic param") {
 
   auto server = std::make_unique<coro_rpc::coro_rpc_server>(
       std::thread::hardware_concurrency(), 8808);
-  std::thread thrd([&] {
-    coro_rpc::register_handler<test_func>();
-    try {
-      auto ec = server->start();
-      REQUIRE(ec == std::errc{});
-    } catch (const std::exception& e) {
-      std::cerr << "test varadic param Exception: " << e.what() << "\n";
-    }
-  });
-  REQUIRE_MESSAGE(server->wait_for_start(3s), "server start timeout");
-  coro_rpc_client client;
+  server->register_handler<test_func>();
+  auto res = server->async_start();
+  REQUIRE_MESSAGE(!res.hasResult(), "server start failed");
+  coro_rpc_client client(*coro_io::get_global_executor(), g_client_id++);
 
   syncAwait(client.connect("localhost", std::to_string(server->port())));
 
@@ -50,21 +42,18 @@ TEST_CASE("test varadic param") {
                                                   "hi"s,
                                                   "what"s,
                                               }));
-  easylog::info("begin to stop server");
+  ELOGV(INFO, "begin to stop server");
   server->stop();
-  if (thrd.joinable())
-    thrd.join();
-  easylog::info("finished stop server");
+  ELOGV(INFO, "finished stop server");
   if (ret) {
-    easylog::info("ret value {}", ret.value());
+    ELOGV(INFO, "ret value %s", ret.value().data());
   }
   else {
-    easylog::info("ret err msg {}", ret.error().msg);
+    ELOGV(INFO, "ret err msg %s", ret.error().msg.data());
   }
 
   CHECK(ret);
   if (ret) {
     CHECK(ret == "1145142.000000Hello coro_rpc!hellohiwhat");
-    std::cout << ret.value() << std::endl;
   }
 }

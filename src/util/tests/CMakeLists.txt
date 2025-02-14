@@ -1,9 +1,8 @@
-set(target_name util_tests)
-set(headers_and_sources static_asserts.cpp)
-add_executable(${target_name})
-target_sources(${target_name} PRIVATE
-    ${headers_and_sources}
-)
-target_include_directories(${target_name} PRIVATE
-       ${yaLanTingLibs_SOURCE_DIR}/include
-)
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/output/tests/util)
+
+add_executable(util_meta_string_test test_meta_string.cpp)
+add_executable(util_time_test test_time_util.cpp)
+
+add_test(NAME util_meta_string_test COMMAND util_meta_string_test)
+add_test(NAME util_time_test COMMAND util_time_test)

@@ -1,3 +1,4 @@
+#if __cplusplus >= 202002L
 #include <cassert>
 #include <cstdint>
 #include <functional>
@@ -5,10 +6,10 @@
 #include <memory>
 #include <string>
 #include <type_traits>
+#include <ylt/struct_pack.hpp>
+#include <ylt/struct_pack/tuple.hpp>
 
 #include "doctest.h"
-#include "struct_pack/struct_pack/reflection.h"
-#include "struct_pack/struct_pack/struct_pack_impl.hpp"
 
 using namespace std::string_view_literals;
 
@@ -58,6 +59,7 @@ struct struct_with_empty {
   int c;
 };
 
+#if TUPLET_HAS_NO_UNIQUE_ADDRESS && !(defined _MSC_VER)
 static_assert(offsetof(struct_with_empty, b) == (has_no_unique_address)
                   ? 0
                   : sizeof(int));
@@ -70,12 +72,13 @@ static_assert(offsetof(struct_with_empty, c) ==
                       (has_no_unique_address && !is_cl_or_clang_cl)
                   ? sizeof(int)
                   : 2 * sizeof(int));
+#endif
 
 template <typename Tuple>
 void test_tuple_alignment() {
   Tuple t;
   const auto base_addr{reinterpret_cast<uintptr_t>(&t)};
-  size_t offset{0}, index{0};
+  size_t offset{0};
 
   tuple_for_each(t, [&](auto& element) {
     using element_type = std::decay_t<decltype(element)>;
@@ -192,7 +195,6 @@ TEST_CASE("Check tuplet::apply with tuplet::tie") {
   REQUIRE(b == 2);
   REQUIRE(c == "Hello, world!");
 }
-
 TEST_CASE("Test that for_each works") {
   std::string str;
 
@@ -306,3 +308,4 @@ TEST_CASE("Check tuple decomposition by move") {
   assert(*b == 2);
   assert(c == "Hello, world!");
 }
+#endif

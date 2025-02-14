@@ -1,71 +1,47 @@
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/tests)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/output/tests)
 set(TEST_SRCS
-        test_async_rpc_server.cpp
         test_coro_rpc_server.cpp
         test_coro_rpc_client.cpp
-        test_remote.cpp
         test_register_handler.cpp
         test_router.cpp
         test_connection.cpp
         test_function_name.cpp
         test_variadic.cpp
+        test_parallel.cpp
         )
 set(TEST_COMMON
-        rpc_service.cpp
+        rpc_api.cpp
         main.cpp
         )
-
-add_executable(test_rpc
+add_executable(coro_rpc_test
         ${TEST_SRCS}
         ${TEST_COMMON}
         )
-target_link_libraries(test_rpc PRIVATE libcoro_rpc doctest)
-target_compile_definitions(test_rpc PRIVATE UNIT_TEST_INJECT)
-target_compile_definitions(test_rpc PRIVATE STRUCT_PACK_USE_INT16_SIZE STRUCT_PACK_ENABLE_UNPORTABLE_TYPE)
 add_custom_command(
-        TARGET test_rpc POST_BUILD
+        TARGET coro_rpc_test POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_SOURCE_DIR}/openssl_files
-        ${CMAKE_BINARY_DIR}/openssl_files)
-foreach (_test_file ${TEST_SRCS})
-    get_filename_component(_test_name ${_test_file} NAME_WE)
-    add_executable(${_test_name}
-            ${_test_file}
-            ${TEST_COMMON}
-            )
-    target_link_libraries(${_test_name}
-            libcoro_rpc
-            doctest
-            )
-if  (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-    target_compile_definitions(${_test_name} PRIVATE ASIO_DISABLE_IOCP)
+        ${CMAKE_CURRENT_SOURCE_DIR}/openssl_files
+        ${CMAKE_BINARY_DIR}/src/coro_rpc/openssl_files)
+add_custom_command(
+        TARGET coro_rpc_test POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_SOURCE_DIR}/openssl_files
+        ${CMAKE_BINARY_DIR}/output/openssl_files)
+target_compile_definitions(coro_rpc_test PRIVATE UNIT_TEST_INJECT)
+target_compile_definitions(coro_rpc_test PRIVATE STRUCT_PACK_ENABLE_UNPORTABLE_TYPE)
+
+add_test(NAME coro_rpc_test COMMAND coro_rpc_test)
+
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/output/tests/coro_rpc)
+
+add_executable(coro_rpc_regist_test_1 rpc_api.cpp test_register_duplication_1.cpp)
+add_executable(coro_rpc_regist_test_2 rpc_api.cpp test_register_duplication_2.cpp)
+add_executable(coro_rpc_regist_test_3 rpc_api.cpp test_register_duplication_3.cpp)
+
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND CMAKE_SYSTEM_NAME MATCHES "Windows") # mingw-w64
+  target_link_libraries(coro_rpc_test wsock32 ws2_32)
+  target_link_libraries(coro_rpc_regist_test_1 wsock32 ws2_32)
+  target_link_libraries(coro_rpc_regist_test_2 wsock32 ws2_32)
+  target_link_libraries(coro_rpc_regist_test_3 wsock32 ws2_32)
 endif()
-    target_compile_definitions(${_test_name} PRIVATE UNIT_TEST_INJECT)
-    add_test(${_test_name} ${_test_name})
-    set_tests_properties(${_test_name} PROPERTIES
-            TIMEOUT 300
-            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/tests
-            )
-endforeach ()
-set(TEST_REGISTER_DUPLICATION_SRCS
-        test_register_duplication_1.cpp
-        test_register_duplication_2.cpp
-        test_register_duplication_3.cpp
-        )
-foreach (_test_file ${TEST_REGISTER_DUPLICATION_SRCS})
-    get_filename_component(_test_name ${_test_file} NAME_WE)
-    add_executable(${_test_name}
-            ${_test_file}
-            rpc_service.cpp
-            )
-    target_link_libraries(${_test_name}
-            libcoro_rpc
-            doctest
-            )
-    add_test(${_test_name} ${_test_name})
-    set_tests_properties(${_test_name} PROPERTIES
-            WILL_FAIL ON
-            WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/tests
-            )
-endforeach ()
